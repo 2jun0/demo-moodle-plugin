@@ -1,0 +1,122 @@
+name: Moodle Plugin CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: ${{ matrix.mysql-image }}
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
+          MYSQL_CHARACTER_SET_SERVER: 'utf8mb4'
+          MYSQL_COLLATION_SERVER: 'utf8mb4_unicode_ci'
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '8.3'
+            moodle-branch: 'MOODLE_405_STABLE'
+            database: 'mysqli'
+            mysql-image: 'mysql:8.0'
+            moodle-ci: '^4'
+          - php: '7.4'
+            moodle-branch: 'MOODLE_39_STABLE'
+            database: 'mysqli'
+            mysql-image: 'mysql:5.7'
+            moodle-ci: '^3'
+          - php: '7.1'
+            moodle-branch: 'MOODLE_32_STABLE'
+            database: 'mysqli'
+            mysql-image: 'mysql:5.7'
+            moodle-ci: '^2'
+          - php: '5.6'
+            moodle-branch: 'MOODLE_29_STABLE'
+            database: 'mysqli'
+            mysql-image: 'mysql:5.7'
+            moodle-ci: '^1.5'
+
+    steps:
+      # 1) 우리 플러그인 코드를 ./plugin 하위에 체크아웃.
+      #    (moodle-plugin-ci 가 Moodle 본체를 기본 경로에 깔 수 있도록 비워둠)
+      - name: Check out repository code
+        uses: actions/checkout@v4
+        with:
+          path: plugin
+
+      # 2) 지정한 PHP 버전 설치
+      - name: Setup PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          ini-values: max_input_vars=5000
+          coverage: none
+
+      # 3) moodle-plugin-ci 도구 설치 (composer create-project, v4)
+      - name: Initialise moodle-plugin-ci
+        run: |
+          composer create-project -n --no-dev --prefer-dist moodlehq/moodle-plugin-ci ci ${{ matrix.moodle-ci }}
+          echo $(cd ci/bin; pwd) >> $GITHUB_PATH
+          echo $(cd ci/vendor/bin; pwd) >> $GITHUB_PATH
+          sudo locale-gen en_AU.UTF-8
+          echo "NVM_DIR=$HOME/.nvm" >> $GITHUB_ENV
+
+      # 4) 핵심: 검사용 Moodle 환경 자동 구축 (코어 + DB)
+      - name: Install moodle-plugin-ci
+        run: moodle-plugin-ci install --plugin ./plugin --db-host=127.0.0.1
+        env:
+          DB: ${{ matrix.database }}
+          MOODLE_BRANCH: ${{ matrix.moodle-branch }}
+
+      # 5) 검사들을 줄줄이 실행 ----------------------------------------
+
+      - name: PHP Lint (문법 검사)
+        if: ${{ !cancelled() }}
+        run: moodle-plugin-ci phplint
+
+      - name: PHP Mess Detector (문제 코드 탐지)
+        continue-on-error: true
+        if: ${{ !cancelled() }}
+        run: moodle-plugin-ci phpmd
+
+      - name: Moodle Code Checker (코딩 표준)
+        if: ${{ !cancelled() }}
+        run: moodle-plugin-ci phpcs --max-warnings 0
+
+      - name: PHPDoc Checker (주석 표준)
+        if: ${{ !cancelled() }}
+        run: moodle-plugin-ci phpdoc --max-warnings 0
+
+      - name: Validating (플러그인 구조 검증)
+        if: ${{ !cancelled() }}
+        run: moodle-plugin-ci validate
+
+      - name: Check upgrade savepoints (DB 업그레이드 단계)
+        if: ${{ !cancelled() }}
+        run: moodle-plugin-ci savepoints
+
+      - name: Mustache Lint (템플릿 검사)
+        if: ${{ !cancelled() }}
+        run: moodle-plugin-ci mustache
+
+      - name: Grunt (JS/CSS 빌드 검증)
+        if: ${{ !cancelled() }}
+        run: moodle-plugin-ci grunt --max-lint-warnings 0
+
+      - name: PHPUnit tests (단위 테스트)
+        if: ${{ !cancelled() }}
+        run: moodle-plugin-ci phpunit
+
+      - name: Behat features (브라우저 테스트)
+        if: ${{ !cancelled() }}
+        run: moodle-plugin-ci behat --profile chrome
