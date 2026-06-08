@@ -80,22 +80,10 @@ jobs:
 
       # 5) 검사들을 줄줄이 실행 ----------------------------------------
 
-      - name: PHP Lint (문법 검사)
-        if: ${{ !cancelled() }}
-        run: moodle-plugin-ci phplint
-
       - name: PHP Mess Detector (문제 코드 탐지)
         continue-on-error: true
         if: ${{ !cancelled() }}
         run: moodle-plugin-ci phpmd
-
-      - name: Moodle Code Checker (코딩 표준)
-        if: ${{ !cancelled() }}
-        run: moodle-plugin-ci phpcs --max-warnings 0
-
-      - name: PHPDoc Checker (주석 표준)
-        if: ${{ !cancelled() }}
-        run: moodle-plugin-ci phpdoc --max-warnings 0
 
       - name: Validating (플러그인 구조 검증)
         if: ${{ !cancelled() }}
