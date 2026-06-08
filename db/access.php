@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and other meta-data are defined here.
+ * Capability definitions for the local_demo plugin.
  *
  * @package     local_demo
  * @copyright   2026 Your Name <you@example.com>
@@ -24,8 +24,12 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_demo';
-$plugin->version = 2026060801;
-$plugin->requires = 2020061500; // Moodle 3.9 (LTS).
-$plugin->maturity = MATURITY_STABLE;
-$plugin->release = 'v1.0.0';
+$capabilities = [
+    'local/demo:postmemo' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+];
