@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Plugin strings are defined here.
+ * Upgrade steps for local_demo.
  *
  * @package     local_demo
  * @copyright   2026 Your Name <you@example.com>
@@ -24,16 +24,31 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'Demo memo board';
-$string['memoboard'] = 'Memo board';
-$string['addmemo'] = 'Add a memo';
-$string['title'] = 'Title';
-$string['content'] = 'Content';
-$string['memoadded'] = 'Memo added.';
-$string['nomemos'] = 'No memos yet.';
-$string['postedby'] = 'Posted {$a}';
-$string['demo:postmemo'] = 'Post a memo on the memo board';
-$string['pin'] = 'Pin';
-$string['unpin'] = 'Unpin';
-$string['pinnedbadge'] = 'Pinned';
-$string['privacy:metadata'] = 'The Demo memo board plugin does not store any personal data about individual users.';
+/**
+ * Upgrade the local_demo plugin.
+ *
+ * @param int $oldversion the version we are upgrading from
+ * @return bool always true
+ */
+function xmldb_local_demo_upgrade($oldversion) {
+    global $DB;
+
+    $dbman = $DB->get_manager();
+
+    if ($oldversion < 2026060901) {
+
+        // Define field pinned to be added to local_demo_memos.
+        $table = new xmldb_table('local_demo_memos');
+        $field = new xmldb_field('pinned', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'usermodified');
+
+        // Conditionally launch add field pinned.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Demo memo board savepoint reached.
+        upgrade_plugin_savepoint(true, 2026060901, 'local', 'demo');
+    }
+
+    return true;
+}

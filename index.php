@@ -36,6 +36,14 @@ $PAGE->set_pagelayout('standard');
 $PAGE->set_title(get_string('memoboard', 'local_demo'));
 $PAGE->set_heading(get_string('memoboard', 'local_demo'));
 
+$pin = optional_param('pin', 0, PARAM_INT);
+$unpin = optional_param('unpin', 0, PARAM_INT);
+if ($pin || $unpin) {
+    require_sesskey();
+    \local_demo\memo::set_pinned($pin ?: $unpin, (bool) $pin);
+    redirect(new moodle_url('/local/demo/index.php'));
+}
+
 $form = new \local_demo\form\memo_form();
 
 if ($data = $form->get_data()) {
@@ -59,14 +67,32 @@ if (empty($memos)) {
 } else {
     echo html_writer::start_tag('ul', ['class' => 'local-demo-memos']);
     foreach ($memos as $memo) {
-        echo html_writer::start_tag('li');
+        $liattributes = ['class' => 'local-demo-memo' . ($memo->pinned ? ' local-demo-memo-pinned' : '')];
+        echo html_writer::start_tag('li', $liattributes);
         echo html_writer::tag('h4', format_string($memo->title));
+        if ($memo->pinned) {
+            echo html_writer::span(get_string('pinnedbadge', 'local_demo'), 'badge local-demo-pinned-badge');
+        }
         echo html_writer::tag('div', format_text($memo->content, FORMAT_PLAIN));
         echo html_writer::tag(
             'div',
             get_string('postedby', 'local_demo', userdate($memo->timecreated)),
             ['class' => 'local-demo-memo-meta']
         );
+
+        // Pin / unpin toggle: a small POST form carrying sesskey and the memo id.
+        $fieldname = $memo->pinned ? 'unpin' : 'pin';
+        $label = $memo->pinned ? get_string('unpin', 'local_demo') : get_string('pin', 'local_demo');
+        echo html_writer::start_tag('form', [
+            'method' => 'post',
+            'action' => (new moodle_url('/local/demo/index.php'))->out(false),
+            'class' => 'local-demo-pin-form',
+        ]);
+        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
+        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => $fieldname, 'value' => $memo->id]);
+        echo html_writer::tag('button', $label, ['type' => 'submit']);
+        echo html_writer::end_tag('form');
+
         echo html_writer::end_tag('li');
     }
     echo html_writer::end_tag('ul');

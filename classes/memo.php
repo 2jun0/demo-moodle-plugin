@@ -52,13 +52,25 @@ class memo {
     }
 
     /**
-     * Get all memos, newest first.
+     * Get all memos, pinned first, then newest first.
      *
      * @return array array of memo records keyed by id
      */
     public static function get_all(): array {
         global $DB;
 
-        return $DB->get_records('local_demo_memos', null, 'timecreated DESC');
+        return $DB->get_records('local_demo_memos', null, 'pinned DESC, timecreated DESC, id DESC');
+    }
+
+    /**
+     * Pin or unpin a memo.
+     *
+     * @param int $id memo id
+     * @param bool $pinned true to pin to the top, false to unpin
+     */
+    public static function set_pinned(int $id, bool $pinned): void {
+        global $DB;
+
+        $DB->set_field('local_demo_memos', 'pinned', $pinned ? 1 : 0, ['id' => $id]);
     }
 }
