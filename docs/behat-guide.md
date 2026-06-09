@@ -261,6 +261,55 @@ vendor/bin/behat --config /path/to/behat_moodledata/behatrun/behat/behat.yml --t
 3. 화면 라벨과 정확히 일치하는 스텝 문구 사용.
 4. push → CI의 Behat 단계에서 자동 실행.
 
+### 커스텀 스텝 직접 정의하기 (`pin.feature` 예제)
+
+내장 스텝만으로 안 되는 순간이 옵니다. 메모 고정 기능의 `pin.feature`가 그 예입니다.
+
+- 메모마다 "Pin" 버튼이 렌더되므로 화면에 같은 라벨 버튼이 여러 개입니다. 내장
+  `I press "Pin"`은 **어느 행의 버튼인지** 못 집습니다.
+- "메모 A가 메모 B보다 **위에** 보인다"는 **순서 비교**는 내장 스텝에 아예 없습니다.
+
+그래서 `tests/behat/behat_local_demo.php`에 자체 스텝을 정의합니다(`behat_base` 상속,
+실패 시 `ExpectationException`):
+
+```php
+class behat_local_demo extends behat_base {
+
+    /** @When I pin the memo :title */
+    public function i_pin_the_memo(string $title): void {
+        $this->press_memo_button($title, get_string('pin', 'local_demo'));
+    }
+
+    /** @Then I should see memo :a above memo :b */
+    public function memo_should_appear_above(string $a, string $b): void {
+        $titles = $this->memo_titles_in_order();      // 위→아래 제목 배열
+        $posa = array_search($a, $titles, true);
+        $posb = array_search($b, $titles, true);
+        if ($posa === false || $posb === false || $posa >= $posb) {
+            throw new ExpectationException("...", $this->getSession());
+        }
+    }
+}
+```
+
+핵심:
+
+- **애너테이션이 곧 스텝 문구**입니다. `@When I pin the memo :title`의 `:title`이
+  따옴표 인자(`"지난 공지"`)를 받아 메서드 인자로 들어옵니다.
+- 행을 집는 헬퍼는 Mink로 `ul.local-demo-memos > li`를 훑어 `<h4>` 제목이 일치하는 행을
+  찾고, 그 **행 안에서만** `named` 셀렉터로 버튼을 눌러 "그 메모의" 버튼임을 보장합니다.
+- 버튼 라벨은 `get_string('pin', ...)`로 가져옵니다. 화면 라벨이 바뀌어도 스텝과 자동으로
+  맞아, "스텝 문구는 영어, 데이터는 자유"(2장) 원칙을 깨지 않습니다.
+- 이 시나리오는 비-JS라 `find()`의 스핀/재시도 없이 Mink를 직접 써도 안정적입니다.
+  AJAX·동적 렌더가 끼면 `@javascript`를 붙이고 `behat_base::find()`(재시도 포함)를 씁니다.
+
+그러면 `pin.feature`에서 이렇게 사람이 읽는 문장으로 순서를 검증합니다:
+
+```gherkin
+When I pin the memo "지난 공지"
+Then I should see memo "지난 공지" above memo "새 공지"
+```
+
 ---
 
 ## 4. PHPUnit과 Behat: 언제 무엇을
