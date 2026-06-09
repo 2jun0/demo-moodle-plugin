@@ -35,16 +35,6 @@ jobs:
             database: 'mysqli'
             mysql-image: 'mysql:5.7'
             moodle-ci: '^3'
-          - php: '7.1'
-            moodle-branch: 'MOODLE_32_STABLE'
-            database: 'mysqli'
-            mysql-image: 'mysql:5.7'
-            moodle-ci: '^2'
-          - php: '5.6'
-            moodle-branch: 'MOODLE_29_STABLE'
-            database: 'mysqli'
-            mysql-image: 'mysql:5.7'
-            moodle-ci: '^1.5'
 
     steps:
       # 1) 우리 플러그인 코드를 ./plugin 하위에 체크아웃.
