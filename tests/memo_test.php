@@ -52,4 +52,48 @@ class memo_test extends \advanced_testcase {
 
         $this->assertCount(1, memo::get_all());
     }
+
+    /**
+     * Pinning a memo floats it above newer memos; unpinning drops it back.
+     */
+    public function test_set_pinned_floats_to_top(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        $older = (int) $DB->insert_record('local_demo_memos', (object) [
+            'title' => 'Older', 'content' => 'a', 'timecreated' => 1000, 'usermodified' => 0, 'pinned' => 0,
+        ]);
+        $newer = (int) $DB->insert_record('local_demo_memos', (object) [
+            'title' => 'Newer', 'content' => 'b', 'timecreated' => 2000, 'usermodified' => 0, 'pinned' => 0,
+        ]);
+
+        // By default the newest memo is first.
+        $this->assertSame([$newer, $older], array_keys(memo::get_all()));
+
+        // Pinning the older memo floats it to the top.
+        memo::set_pinned($older, true);
+        $this->assertSame([$older, $newer], array_keys(memo::get_all()));
+
+        // Unpinning drops it back below the newer memo.
+        memo::set_pinned($older, false);
+        $this->assertSame([$newer, $older], array_keys(memo::get_all()));
+    }
+
+    /**
+     * Memos with the same timecreated are ordered by id descending (newest insert first).
+     */
+    public function test_get_all_breaks_time_ties_by_id(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        $first = (int) $DB->insert_record('local_demo_memos', (object) [
+            'title' => 'First', 'content' => 'a', 'timecreated' => 1000, 'usermodified' => 0, 'pinned' => 0,
+        ]);
+        $second = (int) $DB->insert_record('local_demo_memos', (object) [
+            'title' => 'Second', 'content' => 'b', 'timecreated' => 1000, 'usermodified' => 0, 'pinned' => 0,
+        ]);
+
+        // Same timecreated: the later insert (higher id) comes first.
+        $this->assertSame([$second, $first], array_keys(memo::get_all()));
+    }
 }
