@@ -52,7 +52,7 @@ class memo {
     }
 
     /**
-     * Get all memos, newest first.
+     * Get all memos, pinned first, then newest first.
      *
      * @return array array of memo records keyed by id
      */
