@@ -63,9 +63,17 @@ jobs:
           coverage: none
 
       # 3) moodle-plugin-ci 도구 설치 (composer create-project)
+      #    Composer v1은 Packagist 지원 종료로 사용 불가.
+      #    ^2만 Composer 2 호환을 위해 no-install + 패키지명 정규화 후 install 처리.
       - name: Initialise moodle-plugin-ci
         run: |
-          composer create-project -n --no-dev --prefer-dist moodlehq/moodle-plugin-ci ci ${{ matrix.moodle-ci }}
+          if [ "${{ matrix.moodle-ci }}" = "^2" ]; then
+            composer create-project -n --no-dev --prefer-dist --no-install moodlehq/moodle-plugin-ci ci ${{ matrix.moodle-ci }}
+            php -r '$file="ci/composer.json"; if (!is_file($file)) { fwrite(STDERR, "Missing $file\n"); exit(1); } $json=json_decode(file_get_contents($file), true); if (!is_array($json)) { fwrite(STDERR, "Invalid JSON in $file\n"); exit(1); } if (isset($json["require"]["Mustache/mustache"])) { $json["require"]["mustache/mustache"] = $json["require"]["Mustache/mustache"]; unset($json["require"]["Mustache/mustache"]); file_put_contents($file, json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL); }'
+            (cd ci && composer install -n --no-dev --prefer-dist)
+          else
+            composer create-project -n --no-dev --prefer-dist moodlehq/moodle-plugin-ci ci ${{ matrix.moodle-ci }}
+          fi
           echo $(cd ci/bin; pwd) >> $GITHUB_PATH
           echo $(cd ci/vendor/bin; pwd) >> $GITHUB_PATH
           sudo locale-gen en_AU.UTF-8
