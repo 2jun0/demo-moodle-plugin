@@ -33,4 +33,7 @@ $string['memoadded'] = 'Memo added.';
 $string['nomemos'] = 'No memos yet.';
 $string['postedby'] = 'Posted {$a}';
 $string['demo:postmemo'] = 'Post a memo on the memo board';
+$string['pin'] = 'Pin';
+$string['unpin'] = 'Unpin';
+$string['pinnedbadge'] = 'Pinned';
 $string['privacy:metadata'] = 'The Demo memo board plugin does not store any personal data about individual users.';
