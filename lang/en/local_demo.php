@@ -24,4 +24,13 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'Demo';
+$string['pluginname'] = 'Demo memo board';
+$string['memoboard'] = 'Memo board';
+$string['addmemo'] = 'Add a memo';
+$string['title'] = 'Title';
+$string['content'] = 'Content';
+$string['memoadded'] = 'Memo added.';
+$string['nomemos'] = 'No memos yet.';
+$string['postedby'] = 'Posted {$a}';
+$string['demo:postmemo'] = 'Post a memo on the memo board';
+$string['privacy:metadata'] = 'The Demo memo board plugin does not store any personal data about individual users.';

@@ -15,17 +15,30 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and other meta-data are defined here.
+ * Privacy provider for local_demo.
  *
  * @package     local_demo
  * @copyright   2026 Your Name <you@example.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+namespace local_demo\privacy;
+
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_demo';
-$plugin->version = 2026060801;
-$plugin->requires = 2020061500; // Moodle 3.9 (LTS).
-$plugin->maturity = MATURITY_STABLE;
-$plugin->release = 'v1.0.0';
+/**
+ * Privacy Subsystem implementation for local_demo.
+ *
+ * Demo simplification: declared as a null provider.
+ */
+class provider implements \core_privacy\local\metadata\null_provider {
+
+    /**
+     * Get the language string identifier with the component's static user data reason.
+     *
+     * @return string
+     */
+    public static function get_reason(): string {
+        return 'privacy:metadata';
+    }
+}
